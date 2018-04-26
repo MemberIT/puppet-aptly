@@ -7,12 +7,29 @@ describe Puppet::Type.type(:aptly_publish).provider(:cli) do
       name: 'test-snap',
       ensure: 'present',
       source_type: :snapshot,
-      distribution: 'jessie-test-snap'
+      distribution: 'jessie-test-snap',
+      prefix: 'test-prefix',
+      architectures: ['amd64,i386'],
+      label: 'Debian-Security'
+    )
+  end
+
+  let(:resource_with_all_architectures) do
+    Puppet::Type.type(:aptly_publish).new(
+      name: 'test-snap',
+      ensure: 'present',
+      source_type: :snapshot,
+      distribution: 'jessie-test-snap',
+      prefix: 'test-prefix'
     )
   end
 
   let(:provider) do
     described_class.new(resource)
+  end
+
+  let(:provider_with_all_architectures) do
+    described_class.new(resource_with_all_architectures)
   end
 
   [:create, :destroy, :exists?].each do |method|
@@ -28,10 +45,29 @@ describe Puppet::Type.type(:aptly_publish).provider(:cli) do
         gid: '450',
         object: :publish,
         action: :snapshot,
-        arguments: ['test-snap'],
-        flags: { 'distribution' => 'jessie-test-snap' }
+        arguments: ['test-snap', 'test-prefix'],
+        flags: {
+          'architectures' => 'amd64,i386',
+          'distribution'  => 'jessie-test-snap',
+          'label'         => 'Debian-Security'
+        }
       )
       provider.create
+    end
+
+    it 'publish the snapshot (all architectures)' do
+      Puppet_X::Aptly::Cli.expects(:execute).with(
+        uid: '450',
+        gid: '450',
+        object: :publish,
+        action: :snapshot,
+        arguments: ['test-snap', 'test-prefix'],
+        flags: {
+          'distribution' => 'jessie-test-snap',
+          'label'        => ''
+        }
+      )
+      provider_with_all_architectures.create
     end
   end
 
@@ -42,7 +78,7 @@ describe Puppet::Type.type(:aptly_publish).provider(:cli) do
         gid: '450',
         object: :publish,
         action: 'drop',
-        arguments: ['test-snap'],
+        arguments: ['test-snap', 'test-prefix'],
         flags: { 'force-drop' => 'true' }
       )
       provider.destroy
@@ -56,9 +92,8 @@ describe Puppet::Type.type(:aptly_publish).provider(:cli) do
         gid: '450',
         object: :publish,
         action: 'list',
-        flags: { 'raw' => 'true' },
-        exceptions: false
-      ).returns "foo\ntest-snap\nbar"
+        flags: { 'raw' => 'true' }
+      ).returns ". foo\ntest-prefix test-snap\n. bar"
       expect(provider.exists?).to eq(true)
     end
     it 'handle empty publications' do
@@ -67,8 +102,7 @@ describe Puppet::Type.type(:aptly_publish).provider(:cli) do
         gid: '450',
         object: :publish,
         action: 'list',
-        flags: { 'raw' => 'true' },
-        exceptions: false
+        flags: { 'raw' => 'true' }
       ).returns ''
       expect(provider.exists?).to eq(false)
     end

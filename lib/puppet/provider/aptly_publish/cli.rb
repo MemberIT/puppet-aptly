@@ -9,13 +9,22 @@ Puppet::Type.type(:aptly_publish).provide(:cli) do
   def create
     Puppet.info("Publishing Aptly #{resource[:source_type]} #{name}")
 
+    flags = {
+      'distribution' => resource[:distribution],
+      'label'        => resource[:label]
+    }
+
+    if resource[:architectures] != :undef
+      flags['architectures'] = [resource[:architectures]].join(',')
+    end
+
     Puppet_X::Aptly::Cli.execute(
-      uid: resource[:uid],
-      gid: resource[:gid],
-      object: :publish,
-      action: resource[:source_type],
-      arguments: [name],
-      flags: { 'distribution' => resource[:distribution] }
+      uid:       resource[:uid],
+      gid:       resource[:gid],
+      object:    :publish,
+      action:    resource[:source_type],
+      arguments: [name, resource[:prefix]],
+      flags:     flags
     )
   end
 
@@ -27,7 +36,7 @@ Puppet::Type.type(:aptly_publish).provide(:cli) do
       gid: resource[:gid],
       object: :publish,
       action: 'drop',
-      arguments: [name],
+      arguments: [name, resource[:prefix]],
       flags: { 'force-drop' => resource[:force] ? 'true' : 'false' }
     )
   end
@@ -40,8 +49,7 @@ Puppet::Type.type(:aptly_publish).provide(:cli) do
       gid: resource[:gid],
       object: :publish,
       action: 'list',
-      flags: { 'raw' => 'true' },
-      exceptions: false
-    ).lines.map(&:chomp).include? name
+      flags: { 'raw' => 'true' }
+    ).lines.map(&:chomp).include? "#{resource[:prefix]} #{name}"
   end
 end

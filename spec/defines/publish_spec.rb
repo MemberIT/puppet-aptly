@@ -9,7 +9,10 @@ describe 'aptly::publish' do
         gid: '450',
         source_type: 'snapshot',
         distribution: 'jessie-2016-07-30-daily-snapshot',
-        name: '2016-07-30-daily-snapshot'
+        name: '2016-07-30-daily-snapshot',
+        prefix: 'test-prefix',
+        architectures: ['amd64'],
+        label: 'Debian-Security'
       }
     end
 
@@ -18,7 +21,10 @@ describe 'aptly::publish' do
         with_ensure('present').\
         with_uid('450').\
         with_gid('450').\
-        with_source_type('snapshot')
+        with_source_type('snapshot').\
+        with_prefix('test-prefix').\
+        with_architectures(['amd64']).\
+        with_label('Debian-Security')
     end
   end
 end
