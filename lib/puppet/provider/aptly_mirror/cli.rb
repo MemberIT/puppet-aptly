@@ -8,17 +8,24 @@ Puppet::Type.type(:aptly_mirror).provide(:cli) do
 
   def create
     Puppet.info("Creating Aptly Mirror #{name}")
+    flags = {
+      'with-sources'  => resource[:with_sources],
+      'with-udebs'    => resource[:with_udebs]
+    }
+
+    if resource[:architectures] == []
+      flags['force-architectures'] = ''
+    else
+      flags['architectures'] = [resource[:architectures]].join(',')
+    end
+
     Puppet_X::Aptly::Cli.execute(
       uid: resource[:uid],
       gid: resource[:gid],
       object: :mirror,
       action: 'create',
       arguments: [name, resource[:location], resource[:distribution], [resource[:components]].join(' ')],
-      flags: {
-        'architectures' => [resource[:architectures]].join(','),
-        'with-sources'  => resource[:with_sources],
-        'with-udebs'    => resource[:with_udebs]
-      }
+      flags: flags
     )
 
     return unless resource[:update]
