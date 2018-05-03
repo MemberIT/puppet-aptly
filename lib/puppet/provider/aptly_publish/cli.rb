@@ -50,6 +50,6 @@ Puppet::Type.type(:aptly_publish).provide(:cli) do
       object: :publish,
       action: 'list',
       flags: { 'raw' => 'true' }
-    ).lines.map(&:chomp).include? "#{resource[:prefix]} #{name}"
+    ).lines.map(&:chomp).include? "#{resource[:prefix]} #{resource[:distribution]}"
   end
 end
